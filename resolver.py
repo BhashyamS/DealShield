@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, quote_plus
+from urllib.parse import urlparse, quote_plus, parse_qs, unquote
 
 
 def is_url(user_input):
@@ -11,6 +11,29 @@ def normalize_url(url):
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
     return url
+
+
+def clean_duckduckgo_url(href):
+    """
+    DuckDuckGo often returns redirect links like:
+    //duckduckgo.com/l/?uddg=https%3A%2F%2Fwww.doordash.com%2F...
+
+    This function extracts the real website from the uddg parameter.
+    """
+    if not href:
+        return None
+
+    if href.startswith("//"):
+        href = "https:" + href
+
+    parsed = urlparse(href)
+
+    if "duckduckgo.com" in parsed.netloc and "/l/" in parsed.path:
+        query_params = parse_qs(parsed.query)
+        if "uddg" in query_params:
+            return unquote(query_params["uddg"][0])
+
+    return href
 
 
 def search_company_name(company_name):
@@ -36,6 +59,7 @@ def search_company_name(company_name):
 
     soup = BeautifulSoup(response.text, "html.parser")
     results = []
+    seen_urls = set()
 
     for result in soup.select(".result"):
         link = result.select_one(".result__a")
@@ -44,16 +68,25 @@ def search_company_name(company_name):
             continue
 
         title = link.get_text(" ", strip=True)
-        href = link.get("href")
+        raw_href = link.get("href")
+        cleaned_url = clean_duckduckgo_url(raw_href)
 
-        if not href:
+        if not cleaned_url:
             continue
 
-        parsed = urlparse(href)
+        parsed = urlparse(cleaned_url)
+
+        if not parsed.netloc:
+            continue
+
+        if cleaned_url in seen_urls:
+            continue
+
+        seen_urls.add(cleaned_url)
 
         results.append({
             "title": title,
-            "url": href,
+            "url": cleaned_url,
             "domain": parsed.netloc
         })
 
