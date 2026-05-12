@@ -2,13 +2,16 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
+from resolver import clean_url
+
 
 LEGAL_KEYWORDS = {
     "terms": [
         "terms",
         "terms of service",
         "terms and conditions",
-        "user agreement"
+        "user agreement",
+        "legal"
     ],
     "privacy": [
         "privacy",
@@ -35,12 +38,6 @@ LEGAL_KEYWORDS = {
 }
 
 
-def normalize_url(url):
-    if not url.startswith(("http://", "https://")):
-        url = "https://" + url
-    return url
-
-
 def get_page_html(url):
     headers = {
         "User-Agent": (
@@ -52,19 +49,23 @@ def get_page_html(url):
         "Referer": "https://www.google.com/"
     }
 
-    response = requests.get(
-        url,
-        headers=headers,
-        timeout=15
-    )
-
+    response = requests.get(url, headers=headers, timeout=15)
     response.raise_for_status()
-
     return response.text
 
 
+def categorize_text(text):
+    text = text.lower()
+
+    for category, keywords in LEGAL_KEYWORDS.items():
+        if any(keyword in text for keyword in keywords):
+            return category
+
+    return "policy"
+
+
 def find_legal_links(base_url):
-    base_url = normalize_url(base_url)
+    base_url = clean_url(base_url)
 
     try:
         html = get_page_html(base_url)
@@ -79,20 +80,21 @@ def find_legal_links(base_url):
     links_found = []
 
     for a_tag in soup.find_all("a", href=True):
-        link_text = a_tag.get_text(" ", strip=True).lower()
-        href = a_tag["href"].lower()
+        link_text = a_tag.get_text(" ", strip=True)
+        href = a_tag["href"]
 
-        full_url = urljoin(base_url, a_tag["href"])
+        full_url = clean_url(urljoin(base_url, href))
+        combined_text = f"{link_text} {href}".lower()
+        category = categorize_text(combined_text)
 
-        combined_text = f"{link_text} {href}"
-
-        for category, keywords in LEGAL_KEYWORDS.items():
-            if any(keyword in combined_text for keyword in keywords):
-                links_found.append({
-                    "category": category,
-                    "text": a_tag.get_text(" ", strip=True),
-                    "url": full_url
-                })
+        if category != "policy":
+            links_found.append({
+                "category": category,
+                "title": link_text or category.title(),
+                "url": full_url,
+                "source": "homepage",
+                "snippet": ""
+            })
 
     unique_links = []
     seen_urls = set()

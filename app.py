@@ -1,8 +1,11 @@
 import streamlit as st
-from scraper import find_legal_links
+
 from resolver import resolve_company_input
+from scanner import scan_for_policy_pages
+
 
 TAVILY_API_KEY = st.secrets["TAVILY_API_KEY"]
+
 
 st.set_page_config(
     page_title="FinePrint AI",
@@ -14,7 +17,7 @@ st.title("🕵️ FinePrint AI")
 st.subheader("Know the catch before you click agree.")
 
 st.write(
-    "Enter a company name or website. FinePrint AI will search for terms, privacy, refund, cancellation, and subscription pages."
+    "Enter a company name or website. FinePrint AI will find policy pages even when the company blocks scraping."
 )
 
 user_input = st.text_input(
@@ -25,19 +28,16 @@ user_input = st.text_input(
 if st.button("Find Company"):
     if not user_input:
         st.warning("Please enter a company name or website.")
-
     else:
         with st.spinner("Finding company website..."):
-            resolved = resolve_company_input(
-                user_input,
-                TAVILY_API_KEY
-            )
+            resolved = resolve_company_input(user_input, TAVILY_API_KEY)
 
         if resolved["error"]:
             st.error(resolved["error"])
 
         elif resolved["type"] == "url":
             st.session_state["selected_url"] = resolved["url"]
+            st.session_state["selected_company"] = user_input
             st.success(f"Using website: {resolved['url']}")
 
         else:
@@ -59,6 +59,7 @@ if "company_options" in st.session_state:
 
     if st.button("Use This Website"):
         st.session_state["selected_url"] = selected_option["url"]
+        st.session_state["selected_company"] = selected_option["title"]
         st.success(f"Selected: {selected_option['url']}")
 
 
@@ -68,21 +69,34 @@ if "selected_url" in st.session_state:
     st.write(st.session_state["selected_url"])
 
     if st.button("Scan Website"):
-        with st.spinner("Scanning website for legal and policy pages..."):
-            result = find_legal_links(st.session_state["selected_url"])
+        with st.spinner("Scanning homepage first. If blocked, using Tavily fallback search..."):
+            result = scan_for_policy_pages(
+                company_name=st.session_state.get("selected_company", user_input),
+                website_url=st.session_state["selected_url"],
+                tavily_api_key=TAVILY_API_KEY
+            )
 
-        if result["error"]:
-            st.error(result["error"])
+        if result["cleaned_url"]:
+            st.info(f"Cleaned URL used for scan: {result['cleaned_url']}")
+
+        if result["homepage_error"]:
+            st.warning(
+                "Homepage scraping was blocked or failed, so FinePrint AI used fallback search instead."
+            )
+            st.caption(result["homepage_error"])
+
+        links = result["links"]
+
+        if not links:
+            st.warning("No legal or policy pages found yet.")
         else:
-            links = result["links"]
+            st.success(f"Found {len(links)} possible policy pages.")
 
-            if not links:
-                st.warning("No legal or policy pages found on the homepage.")
-            else:
-                st.success(f"Found {len(links)} possible policy pages.")
-
-                for link in links:
-                    st.markdown("---")
-                    st.write(f"**Category:** {link['category'].title()}")
-                    st.write(f"**Page Text:** {link['text']}")
-                    st.write(f"**URL:** {link['url']}")
+            for link in links:
+                st.markdown("---")
+                st.write(f"**Category:** {link['category'].title()}")
+                st.write(f"**Title:** {link['title']}")
+                st.write(f"**Source:** {link['source']}")
+                st.write(f"**URL:** {link['url']}")
+                if link.get("snippet"):
+                    st.write(f"**Snippet:** {link['snippet']}")

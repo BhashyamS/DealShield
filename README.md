@@ -1,30 +1,49 @@
-# FinePrint AI v5
+# FinePrint AI v6
 
 ## Features
+
 - Company name OR URL input
-- Tavily-powered company search
-- Secure Streamlit secrets support
-- Legal/policy page detection
+- Secure Tavily API key through Streamlit Secrets
+- Cleans tracking URLs like `?rsltid=...`
+- Tries homepage scraping first
+- If homepage scraping is blocked, uses Tavily fallback search
+- Finds:
+  - Terms of Service
+  - Privacy Policy
+  - Refund Policy
+  - Cancellation Policy
+  - Subscription/Billing pages
 
-## Setup
+## Local Setup
 
-1. Install dependencies
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Add your Tavily API key
-
 Create:
+
+```text
 .streamlit/secrets.toml
+```
 
 Add:
 
-TAVILY_API_KEY = "your_api_key"
+```toml
+TAVILY_API_KEY = "your_real_api_key_here"
+```
 
-3. Run the app
+Run:
 
 ```bash
 streamlit run app.py
+```
+
+## Streamlit Cloud Setup
+
+In Streamlit Cloud, add this to App Settings → Secrets:
+
+```toml
+TAVILY_API_KEY = "your_real_api_key_here"
 ```

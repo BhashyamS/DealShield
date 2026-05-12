@@ -1,4 +1,18 @@
 import requests
+from urllib.parse import urlparse, urlunparse
+
+
+TRACKING_PARAMS = {
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_term",
+    "utm_content",
+    "fbclid",
+    "gclid",
+    "msclkid",
+    "rsltid",
+}
 
 
 def is_url(user_input):
@@ -8,7 +22,32 @@ def is_url(user_input):
 def normalize_url(url):
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
-    return url
+    return clean_url(url)
+
+
+def clean_url(url):
+    """
+    Removes tracking query strings and fragments.
+    Example:
+    https://www.doordash.com/?rsltid=abc -> https://www.doordash.com
+    """
+    parsed = urlparse(url)
+
+    clean = urlunparse((
+        parsed.scheme,
+        parsed.netloc,
+        parsed.path.rstrip("/") or "",
+        "",
+        "",
+        ""
+    ))
+
+    return clean
+
+
+def get_domain(url):
+    parsed = urlparse(normalize_url(url))
+    return parsed.netloc.replace("www.", "")
 
 
 def search_company_name(company_name, tavily_api_key):
@@ -32,13 +71,25 @@ def search_company_name(company_name, tavily_api_key):
         }
 
     data = response.json()
-
     results = []
+    seen_urls = set()
 
     for item in data.get("results", []):
+        raw_url = item.get("url", "")
+
+        if not raw_url:
+            continue
+
+        cleaned = clean_url(raw_url)
+
+        if cleaned in seen_urls:
+            continue
+
+        seen_urls.add(cleaned)
+
         results.append({
             "title": item.get("title", "Unknown"),
-            "url": item.get("url", ""),
+            "url": cleaned,
             "content": item.get("content", "")
         })
 
@@ -59,10 +110,7 @@ def resolve_company_input(user_input, tavily_api_key):
             "error": None
         }
 
-    search_result = search_company_name(
-        user_input,
-        tavily_api_key
-    )
+    search_result = search_company_name(user_input, tavily_api_key)
 
     if search_result["error"]:
         return {
