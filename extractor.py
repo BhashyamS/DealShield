@@ -3,8 +3,8 @@ import requests
 from bs4 import BeautifulSoup
 
 
-MAX_PAGES_TO_EXTRACT = 10
-MAX_CHARS_PER_PAGE = 8000
+MAX_PAGES_TO_EXTRACT = 12
+MAX_CHARS_PER_PAGE = 9000
 
 
 def get_headers():
@@ -53,10 +53,10 @@ def extract_text_from_url(url):
 
 def prioritize_links(links):
     priority = {
-        "terms": 1,
-        "subscription": 2,
-        "cancellation": 3,
-        "refund": 4,
+        "subscription": 1,
+        "cancellation": 2,
+        "refund": 3,
+        "terms": 4,
         "privacy": 5,
         "policy": 6
     }

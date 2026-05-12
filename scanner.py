@@ -6,10 +6,10 @@ from scraper import find_legal_links, categorize_text
 
 POLICY_SEARCHES = [
     ("terms", "terms of service OR terms and conditions OR user agreement"),
+    ("subscription", "membership pricing OR subscription terms OR billing OR auto renewal OR membership agreement OR fees"),
+    ("cancellation", "cancellation policy OR cancel membership OR terminate subscription OR early termination fee"),
+    ("refund", "refund policy OR return policy OR non refundable"),
     ("privacy", "privacy policy"),
-    ("refund", "refund policy OR return policy"),
-    ("cancellation", "cancellation policy OR cancel membership OR terminate subscription"),
-    ("subscription", "subscription terms OR billing OR auto renewal OR membership agreement"),
 ]
 
 
@@ -38,7 +38,7 @@ def find_policy_pages_with_tavily(company_name, website_url, tavily_api_key):
         query = f"site:{domain} {search_phrase}"
 
         try:
-            results = tavily_search(query, tavily_api_key, max_results=4)
+            results = tavily_search(query, tavily_api_key, max_results=5)
         except Exception:
             results = []
 

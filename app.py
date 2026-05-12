@@ -32,7 +32,7 @@ if st.button("Find Company"):
     if not user_input:
         st.warning("Please enter a company name or website.")
     else:
-        with st.spinner("Finding company website..."):
+        with st.spinner("Finding the official company website..."):
             resolved = resolve_company_input(user_input, TAVILY_API_KEY)
 
         if resolved["error"]:
@@ -143,6 +143,22 @@ if "selected_url" in st.session_state:
             st.write("### Quick Summary")
             st.write(report.get("summary", "No summary available."))
 
+            membership_options = report.get("membership_options", [])
+            if membership_options:
+                st.write("### Membership / Subscription Options")
+                st.dataframe(membership_options, use_container_width=True)
+            else:
+                st.write("### Membership / Subscription Options")
+                st.info("No clear membership or subscription options were found in the available policy text.")
+
+            all_fees = report.get("all_fees", [])
+            if all_fees:
+                st.write("### Fee Table")
+                st.dataframe(all_fees, use_container_width=True)
+            else:
+                st.write("### Fee Table")
+                st.info("No specific fee amounts were found in the available policy text.")
+
             st.write("### Key Red Flags")
             red_flags = report.get("red_flags", [])
             if red_flags:
@@ -169,5 +185,10 @@ if "selected_url" in st.session_state:
 
             st.write("### Recommended Action")
             st.info(report.get("recommended_action", "Review the policy pages carefully before signing up."))
+
+            limitations = report.get("evidence_limitations", "")
+            if limitations:
+                with st.expander("Evidence limitations"):
+                    st.write(limitations)
 
             st.caption("Not legal advice. This report summarizes available public policy text and search snippets.")

@@ -33,7 +33,9 @@ LEGAL_KEYWORDS = {
         "membership",
         "billing",
         "auto-renewal",
-        "renewal"
+        "renewal",
+        "fees",
+        "pricing"
     ],
 }
 

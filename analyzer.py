@@ -58,7 +58,7 @@ def call_gemini(prompt, gemini_api_key, model=DEFAULT_GEMINI_MODEL):
             }
         ],
         "generationConfig": {
-            "temperature": 0.2,
+            "temperature": 0.1,
             "responseMimeType": "application/json"
         }
     }
@@ -88,24 +88,26 @@ Analyze the following public policy text and search snippets for consumer risk.
 Company: {company_name}
 Website: {website_url}
 
-Focus on risks a normal consumer would care about:
-- hidden fees
-- free trial conversion
+Focus especially on:
+- membership options
+- subscription tiers
+- plan names
+- free trials
 - recurring billing
-- auto-renewal
-- cancellation difficulty
+- all fees, including monthly fees, annual fees, join fees, service fees, taxes, cancellation fees, early termination fees, refund fees, processing fees, delivery fees, or any vague fee language
 - cancellation deadlines
-- early termination fees
 - refund restrictions
-- non-refundable charges
+- auto-renewal
 - forced arbitration
 - class action waiver
-- vague or confusing pricing terms
-- subscription traps
 
-Do NOT provide legal advice.
-Do NOT make claims that are not supported by the text.
-If the evidence is weak, say so.
+Important:
+- Do NOT make up numbers.
+- If a fee amount is not stated, write "Not specified".
+- If membership options are unclear, still list whatever options are mentioned and mark unknown fields as "Not specified".
+- Do NOT provide legal advice.
+- Only make claims supported by the provided text/snippets.
+- If evidence is weak or from snippets only, say so.
 
 Return ONLY valid JSON with this exact structure:
 
@@ -113,6 +115,25 @@ Return ONLY valid JSON with this exact structure:
   "risk_score": 0,
   "risk_level": "Low | Moderate | High",
   "summary": "plain English summary",
+  "membership_options": [
+    {{
+      "plan_or_membership": "name of plan/membership",
+      "price": "amount or Not specified",
+      "billing_frequency": "monthly/annual/weekly/etc or Not specified",
+      "trial_terms": "trial details or Not specified",
+      "auto_renewal": "Yes/No/Not specified",
+      "cancellation_terms": "plain English cancellation terms",
+      "fees_or_penalties": "fees tied to this plan"
+    }}
+  ],
+  "all_fees": [
+    {{
+      "fee_type": "monthly fee/annual fee/join fee/cancellation fee/etc",
+      "amount": "amount or Not specified",
+      "when_charged": "when this fee applies",
+      "source_context": "short supporting quote or paraphrase from provided text"
+    }}
+  ],
   "red_flags": ["red flag 1", "red flag 2"],
   "billing_findings": ["finding 1", "finding 2"],
   "cancellation_refund_findings": ["finding 1", "finding 2"],
@@ -127,7 +148,7 @@ Scoring guide:
 66-100 = High risk
 
 Policy text:
-{analysis_text[:40000]}
+{analysis_text[:50000]}
 """
 
     try:
