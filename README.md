@@ -1,18 +1,22 @@
-# FinePrint AI v6
+# FinePrint AI v7
+
+FinePrint AI helps users understand the hidden catch before they click agree.
 
 ## Features
 
 - Company name OR URL input
-- Secure Tavily API key through Streamlit Secrets
-- Cleans tracking URLs like `?rsltid=...`
-- Tries homepage scraping first
-- If homepage scraping is blocked, uses Tavily fallback search
-- Finds:
-  - Terms of Service
-  - Privacy Policy
-  - Refund Policy
-  - Cancellation Policy
-  - Subscription/Billing pages
+- Tavily-powered company discovery
+- URL cleaning
+- Homepage scraping + Tavily fallback search
+- Policy page discovery
+- Policy text extraction
+- Gemini-powered consumer risk report
+- Red flag detection for:
+  - recurring billing
+  - auto-renewal
+  - cancellation deadlines
+  - refund restrictions
+  - hidden subscription risks
 
 ## Local Setup
 
@@ -31,7 +35,8 @@ Create:
 Add:
 
 ```toml
-TAVILY_API_KEY = "your_real_api_key_here"
+TAVILY_API_KEY = "your_tavily_key_here"
+GEMINI_API_KEY = "your_gemini_key_here"
 ```
 
 Run:
@@ -45,5 +50,10 @@ streamlit run app.py
 In Streamlit Cloud, add this to App Settings → Secrets:
 
 ```toml
-TAVILY_API_KEY = "your_real_api_key_here"
+TAVILY_API_KEY = "your_tavily_key_here"
+GEMINI_API_KEY = "your_gemini_key_here"
 ```
+
+## Note
+
+This app is not legal advice. It summarizes publicly available policy text and flags consumer-risk patterns.

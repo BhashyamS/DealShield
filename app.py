@@ -2,9 +2,12 @@ import streamlit as st
 
 from resolver import resolve_company_input
 from scanner import scan_for_policy_pages
+from extractor import extract_policy_bundle
+from analyzer import analyze_consumer_risk
 
 
 TAVILY_API_KEY = st.secrets["TAVILY_API_KEY"]
+GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 
 
 st.set_page_config(
@@ -17,7 +20,7 @@ st.title("🕵️ FinePrint AI")
 st.subheader("Know the catch before you click agree.")
 
 st.write(
-    "Enter a company name or website. FinePrint AI will find policy pages even when the company blocks scraping."
+    "Enter a company name or website. FinePrint AI finds policy pages, extracts important terms, and creates a consumer risk report."
 )
 
 user_input = st.text_input(
@@ -76,6 +79,11 @@ if "selected_url" in st.session_state:
                 tavily_api_key=TAVILY_API_KEY
             )
 
+        st.session_state["scan_result"] = result
+
+    if "scan_result" in st.session_state:
+        result = st.session_state["scan_result"]
+
         if result["cleaned_url"]:
             st.info(f"Cleaned URL used for scan: {result['cleaned_url']}")
 
@@ -92,11 +100,74 @@ if "selected_url" in st.session_state:
         else:
             st.success(f"Found {len(links)} possible policy pages.")
 
-            for link in links:
-                st.markdown("---")
-                st.write(f"**Category:** {link['category'].title()}")
-                st.write(f"**Title:** {link['title']}")
-                st.write(f"**Source:** {link['source']}")
-                st.write(f"**URL:** {link['url']}")
-                if link.get("snippet"):
-                    st.write(f"**Snippet:** {link['snippet']}")
+            with st.expander("View discovered policy pages"):
+                for link in links:
+                    st.markdown("---")
+                    st.write(f"**Category:** {link['category'].title()}")
+                    st.write(f"**Title:** {link['title']}")
+                    st.write(f"**Source:** {link['source']}")
+                    st.write(f"**URL:** {link['url']}")
+                    if link.get("snippet"):
+                        st.write(f"**Snippet:** {link['snippet']}")
+
+            if st.button("Generate Consumer Risk Report"):
+                with st.spinner("Extracting policy text and analyzing consumer risk with Gemini..."):
+                    policy_bundle = extract_policy_bundle(links)
+                    risk_report = analyze_consumer_risk(
+                        company_name=st.session_state.get("selected_company", user_input),
+                        website_url=st.session_state["selected_url"],
+                        policy_bundle=policy_bundle,
+                        gemini_api_key=GEMINI_API_KEY
+                    )
+
+                st.session_state["policy_bundle"] = policy_bundle
+                st.session_state["risk_report"] = risk_report
+
+    if "risk_report" in st.session_state:
+        report = st.session_state["risk_report"]
+
+        st.markdown("---")
+        st.write("## 🛡️ FinePrint AI Risk Report")
+
+        if report.get("error"):
+            st.error(report["error"])
+            if report.get("raw_text"):
+                with st.expander("Raw AI output"):
+                    st.write(report["raw_text"])
+        else:
+            score = report.get("risk_score", 0)
+            label = report.get("risk_level", "Unknown")
+
+            st.metric("Consumer Risk Score", f"{score}/100", label)
+
+            st.write("### Quick Summary")
+            st.write(report.get("summary", "No summary available."))
+
+            st.write("### Key Red Flags")
+            red_flags = report.get("red_flags", [])
+            if red_flags:
+                for flag in red_flags:
+                    st.warning(flag)
+            else:
+                st.success("No major red flags detected from the available policy text.")
+
+            st.write("### Hidden Cost / Subscription Findings")
+            findings = report.get("billing_findings", [])
+            if findings:
+                for item in findings:
+                    st.write(f"- {item}")
+            else:
+                st.write("No specific billing findings detected.")
+
+            st.write("### Cancellation / Refund Findings")
+            cancellation = report.get("cancellation_refund_findings", [])
+            if cancellation:
+                for item in cancellation:
+                    st.write(f"- {item}")
+            else:
+                st.write("No specific cancellation or refund findings detected.")
+
+            st.write("### Recommended Action")
+            st.info(report.get("recommended_action", "Review the policy pages carefully before signing up."))
+
+            st.caption("Not legal advice. This report summarizes available public policy text and search snippets.")

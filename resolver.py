@@ -2,35 +2,11 @@ import requests
 from urllib.parse import urlparse, urlunparse
 
 
-TRACKING_PARAMS = {
-    "utm_source",
-    "utm_medium",
-    "utm_campaign",
-    "utm_term",
-    "utm_content",
-    "fbclid",
-    "gclid",
-    "msclkid",
-    "rsltid",
-}
-
-
 def is_url(user_input):
     return "." in user_input or user_input.startswith(("http://", "https://"))
 
 
-def normalize_url(url):
-    if not url.startswith(("http://", "https://")):
-        url = "https://" + url
-    return clean_url(url)
-
-
 def clean_url(url):
-    """
-    Removes tracking query strings and fragments.
-    Example:
-    https://www.doordash.com/?rsltid=abc -> https://www.doordash.com
-    """
     parsed = urlparse(url)
 
     clean = urlunparse((
@@ -43,6 +19,12 @@ def clean_url(url):
     ))
 
     return clean
+
+
+def normalize_url(url):
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    return clean_url(url)
 
 
 def get_domain(url):
