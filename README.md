@@ -1,55 +1,30 @@
-# FinePrint AI
+# FinePrint AI v5
 
-Know the catch before you click agree.
+## Features
+- Company name OR URL input
+- Tavily-powered company search
+- Secure Streamlit secrets support
+- Legal/policy page detection
 
-## Overview
+## Setup
 
-FinePrint AI is an AI-powered consumer protection tool that scans websites for:
-- Terms & Conditions
-- Privacy Policies
-- Refund Policies
-- Cancellation Policies
-- Subscription Terms
-
-The goal is to help users identify:
-- Hidden subscriptions
-- Auto-renewals
-- Cancellation traps
-- Refund restrictions
-- Potential scam patterns
-
-## Week 1 MVP
-
-This version:
-- Accepts a company URL
-- Scans the homepage
-- Finds legal/policy links
-- Categorizes important pages
-
-## Installation
+1. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Run the App
+2. Add your Tavily API key
+
+Create:
+.streamlit/secrets.toml
+
+Add:
+
+TAVILY_API_KEY = "your_api_key"
+
+3. Run the app
 
 ```bash
 streamlit run app.py
 ```
-
-## Example Websites
-
-- https://www.netflix.com
-- https://www.amazon.com
-- https://www.hellofresh.com
-- https://www.doordash.com
-
-## Future Features
-
-- AI summaries
-- Scam/risk score
-- Reddit review analysis
-- Trustpilot scanning
-- Browser extension
-- Subscription risk alerts
