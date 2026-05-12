@@ -2,6 +2,7 @@ import streamlit as st
 from scraper import find_legal_links
 from resolver import resolve_company_input
 
+TAVILY_API_KEY = st.secrets["TAVILY_API_KEY"]
 
 st.set_page_config(
     page_title="FinePrint AI",
@@ -24,9 +25,13 @@ user_input = st.text_input(
 if st.button("Find Company"):
     if not user_input:
         st.warning("Please enter a company name or website.")
+
     else:
         with st.spinner("Finding company website..."):
-            resolved = resolve_company_input(user_input)
+            resolved = resolve_company_input(
+                user_input,
+                TAVILY_API_KEY
+            )
 
         if resolved["error"]:
             st.error(resolved["error"])
